@@ -8,5 +8,5 @@ app_license = "MIT"
 
 # Load custom JS on the POS page
 page_js = {
-    "point-of-sale": "public/js/pos_print_button.js"
+    "point-of-sale": "pos_customization/public/js/pos_print_button.js"
 }
