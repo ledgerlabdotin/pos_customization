@@ -1,53 +1,54 @@
-// Add "Print Draft" button to new POS interface (ERPNext v15)
+// Add "Print Draft" button to the POS menu (ERPNext v15+)
 frappe.provide('erpnext.PointOfSale');
 
 (function () {
-    function setup_custom_pos() {
+    function patch_pos_controller() {
+        const Controller = erpnext?.PointOfSale?.Controller;
+
         // wait until POS controller is loaded
-        if (!(window.erpnext && erpnext.PointOfSale && erpnext.PointOfSale.Controller)) {
-            setTimeout(setup_custom_pos, 500);
+        if (!Controller || !Controller.prototype) {
+            setTimeout(patch_pos_controller, 500);
             return;
         }
 
-        const BaseController = erpnext.PointOfSale.Controller;
-
-        class CustomPOSController extends BaseController {
-            prepare_menu() {
-                // keep original menu
-                super.prepare_menu();
-
-                // add our custom Print button
-                this.page.add_menu_item(
-                    __("Print Draft"),
-                    async () => {
-                        await this.print_draft_invoice();
-                    },
-                    false,
-                    "Ctrl+P"
-                );
-            }
-
-            async print_draft_invoice() {
-                if (!this.frm || !this.frm.doc) {
-                    frappe.msgprint(__("No POS Invoice to print."));
-                    return;
-                }
-
-                // ensure draft is saved (docstatus = 0)
-                if (this.frm.is_dirty()) {
-                    await this.frm.save();
-                }
-
-                // open print dialog
-                this.frm.print_doc();
-                // or use:
-                // this.frm.print_preview();
-            }
+        // avoid re-patching when the page is revisited
+        if (Controller.prototype._print_draft_patched) {
+            return;
         }
 
-        // override default controller
-        erpnext.PointOfSale.Controller = CustomPOSController;
+        const original_prepare_menu = Controller.prototype.prepare_menu;
+
+        Controller.prototype.prepare_menu = function (...args) {
+            const result = original_prepare_menu?.apply(this, args);
+
+            this.page?.add_menu_item(
+                __("Print Draft"),
+                async () => {
+                    await this.print_draft_invoice();
+                },
+                false,
+                "Ctrl+P"
+            );
+
+            return result;
+        };
+
+        Controller.prototype.print_draft_invoice = async function () {
+            if (!this.frm || !this.frm.doc) {
+                frappe.msgprint(__("No POS Invoice to print."));
+                return;
+            }
+
+            // ensure draft is saved (docstatus = 0)
+            if (this.frm.is_dirty?.()) {
+                await this.frm.save();
+            }
+
+            this.frm.print_doc();
+        };
+
+        Controller.prototype._print_draft_patched = true;
     }
 
-    setup_custom_pos();
+    patch_pos_controller();
 })();
