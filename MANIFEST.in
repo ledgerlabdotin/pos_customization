@@ -1,3 +1,6 @@
+include MANIFEST.in
+include requirements.txt
+
 recursive-include pos_customization *.py
 recursive-include pos_customization *.js
 recursive-include pos_customization *.json
@@ -5,4 +8,3 @@ recursive-include pos_customization *.md
 recursive-include pos_customization *.html
 recursive-include pos_customization *.css
 recursive-include pos_customization *.txt
-
